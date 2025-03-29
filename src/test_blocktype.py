@@ -59,3 +59,12 @@ class TestMarkdownParser(unittest.TestCase):
             html,
             "<div><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff\n</code></pre></div>",
         )
+
+    #test extract_title:
+    def test_extract_title(self):
+        markdown = "# Hello"
+        markdown2 = "# No Title"
+        result = extract_title(markdown)
+        result2 = extract_title(markdown2)
+        self.assertEqual(result, "Hello")
+        self.assertEqual(result2, "No Title")

@@ -1,4 +1,5 @@
 from enum import Enum
+from html.parser import HTMLParser
 from delimiter import *
 from htmlnode import *
 from textnode import *
@@ -8,8 +9,8 @@ class BlockType(Enum):
     HEADING = "h"
     CODE = "code"
     QUOTE = "blockquote"
-    UNORDERED_LIST = "ul"
-    ORDERED_LIST = "ol"
+    ULIST = "ul"
+    OLIST = "ol"
 
 def block_to_block_type(block):
     lines = block.split("\n")
@@ -27,14 +28,14 @@ def block_to_block_type(block):
         for line in lines:
             if not line.startswith("- "):
                 return BlockType.PARAGRAPH
-        return BlockType.UNORDERED_LIST
+        return BlockType.ULIST
     if block.startswith("1. "):
         i = 1
         for line in lines:
             if not line.startswith(f"{i}. "):
                 return BlockType.PARAGRAPH
             i += 1
-        return BlockType.ORDERED_LIST
+        return BlockType.OLIST
     return BlockType.PARAGRAPH
 
 def markdown_to_html_node(markdown):
@@ -128,3 +129,30 @@ def quote_to_html_node(block):
     content = " ".join(new_lines)
     children = text_to_children(content)
     return ParentNode("blockquote", children)
+
+def extract_title(html):
+    heading = None
+    in_h1 = False
+
+    def handle_starttag(tag, attrs):
+        nonlocal in_h1
+        if tag == "h1":
+            in_h1 = True
+
+    def handle_endtag(tag):
+        nonlocal in_h1
+        if tag == "h1":
+            in_h1 = False
+
+    def handle_data(data):
+        nonlocal heading, in_h1
+        if in_h1 and heading is None:  # Nur den ersten <h1> speichern
+            heading = data.strip()
+
+    parser = HTMLParser()
+    parser.handle_starttag = handle_starttag
+    parser.handle_endtag = handle_endtag
+    parser.handle_data = handle_data
+    parser.feed(html)
+
+    return heading
